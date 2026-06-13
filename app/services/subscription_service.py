@@ -16,11 +16,10 @@ YEARLY_MULTIPLIERS = {
     "year": 1,
 }
 
-CYCLE_DELTAS = {
-    "week": relativedelta(days=7),
-    "month": relativedelta(months=1),
-    "quarter": relativedelta(months=3),
-    "year": relativedelta(years=1),
+CYCLE_RELATIVEDELTA_ARGS = {
+    "week": "weeks",
+    "month": "months",
+    "year": "years",
 }
 
 
@@ -30,19 +29,32 @@ def now_display(timezone_name: str) -> str:
 
 
 def next_renewal_date(payment_date: date, billing_cycle: str, today: date) -> date:
-    delta = CYCLE_DELTAS[billing_cycle]
-    renewal_date = payment_date + delta
+    cycle_count = 0
+    renewal_date = add_cycles(payment_date, billing_cycle, cycle_count)
     while renewal_date < today:
-        renewal_date = renewal_date + delta
+        cycle_count += 1
+        renewal_date = add_cycles(payment_date, billing_cycle, cycle_count)
     return renewal_date
 
 
 def current_period_start(payment_date: date, billing_cycle: str, renewal_date: date) -> date:
+    if renewal_date == payment_date:
+        return payment_date
+
+    cycle_count = 0
     period_start = payment_date
-    delta = CYCLE_DELTAS[billing_cycle]
-    while period_start + delta < renewal_date:
-        period_start = period_start + delta
-    return period_start
+    while True:
+        next_period_start = add_cycles(payment_date, billing_cycle, cycle_count + 1)
+        if next_period_start >= renewal_date:
+            return period_start
+        cycle_count += 1
+        period_start = next_period_start
+
+
+def add_cycles(payment_date: date, billing_cycle: str, cycle_count: int) -> date:
+    if billing_cycle == "quarter":
+        return payment_date + relativedelta(months=cycle_count * 3)
+    return payment_date + relativedelta(**{CYCLE_RELATIVEDELTA_ARGS[billing_cycle]: cycle_count})
 
 
 def build_subscription_id(subscription: SubscriptionConfig) -> str:

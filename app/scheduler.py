@@ -103,17 +103,17 @@ class Scheduler:
                 if item["amount_cny"] is not None:
                     body += f"（约 ¥{item['amount_cny']:.2f}）"
                 success = send_bark_notification(config.app.notify_url, "订阅续费提醒", body)
-                notifications.append(
-                    {
-                        "dedupe_key": dedupe_key,
-                        "subscription_id": item["subscription_id"],
-                        "payment_date": item["payment_date"],
-                        "renewal_date": item["renewal_date"],
-                        "sent_at": now_iso(config.app.timezone),
-                        "success": success,
-                    }
-                )
-                sent_keys.add(dedupe_key)
+                if success:
+                    notifications.append(
+                        {
+                            "dedupe_key": dedupe_key,
+                            "subscription_id": item["subscription_id"],
+                            "payment_date": item["payment_date"],
+                            "renewal_date": item["renewal_date"],
+                            "sent_at": now_iso(config.app.timezone),
+                        }
+                    )
+                    sent_keys.add(dedupe_key)
 
         log_data["notifications"] = notifications
         write_json_atomic(self.notification_log_path, log_data)
