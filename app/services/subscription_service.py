@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from collections import defaultdict
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -121,13 +120,12 @@ def build_subscription_item(subscription: SubscriptionConfig, remind_before_days
 
 
 def build_category_groups(items: list[dict]) -> list[dict]:
-    grouped = defaultdict(list)
+    grouped = {}
     for item in items:
-        grouped[item["category"]].append(item)
+        grouped.setdefault(item["category"], []).append(item)
 
     groups = []
-    for category_name in sorted(grouped):
-        subscription_items = sorted(grouped[category_name], key=lambda item: (item["renewal_date"], item["name"]))
+    for category_name, subscription_items in grouped.items():
         groups.append(
             {
                 "category_name": category_name,
