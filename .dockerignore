@@ -1,0 +1,7 @@
+.subbark/
+__pycache__/
+*.py[cod]
+.DS_Store
+data/
+README.md
+AGENTS.md

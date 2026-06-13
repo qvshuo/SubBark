@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='bell.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>{{ title }}</h1>
+      </header>
+
+      <section class="summary-card">
+        <div class="summary-layout">
+          <div class="summary-lines">
+            <div><span>总订阅</span><strong>{{ dashboard.summary.total_subscription_count }} 个</strong></div>
+            <div><span>即将到期</span><strong>{{ dashboard.summary.expiring_subscription_count }} 个</strong></div>
+            <div><span>本月待续费</span><strong>¥{{ "%.2f"|format(dashboard.summary.monthly_due_cny) }}</strong></div>
+          </div>
+          <div class="summary-emphasis">
+            <span>年度预估</span>
+            <strong>¥{{ "%.2f"|format(dashboard.summary.yearly_estimated_cny) }}</strong>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span>最后检查：{{ dashboard.summary.last_check_display }}</span>
+        </div>
+      </section>
+
+      <section class="groups">
+        {% for group in dashboard.category_groups %}
+        <article class="category-card{% if group.subscription_count == 1 %} category-card-compact{% endif %}">
+          <div class="category-head">
+            <h2>{{ group.category_name }} <span>· {{ group.subscription_count }} 个订阅</span></h2>
+            <strong>¥{{ "%.2f"|format(group.yearly_estimated_cny) }}/年</strong>
+          </div>
+
+          <div class="subscription-list">
+            {% for item in group.subscription_items %}
+            <div class="subscription-item status-{{ item.status }}">
+              <div class="item-main">
+                <div>
+                  <h3>{{ item.name }}</h3>
+                  <p>
+                    {{ item.billing_cycle|cycle_label }} ·
+                    {% if item.currency == "CNY" %}
+                      ¥{{ "%.2f"|format(item.amount) }}
+                    {% elif item.amount_cny is none %}
+                      {{ item.currency }} {{ "%.2f"|format(item.amount) }} · 汇率暂无
+                    {% else %}
+                      {{ item.currency }} {{ "%.2f"|format(item.amount) }} · 约 ¥{{ "%.2f"|format(item.amount_cny) }}
+                    {% endif %}
+                  </p>
+                </div>
+                <span class="status-pill">{{ item.status|status_label }}</span>
+              </div>
+              <div class="dates">
+                <span>续费日 {{ item.renewal_date }}</span>
+                <span>剩余 {{ item.days_left }} 天</span>
+              </div>
+              <div class="progress" aria-label="进度 {{ item.progress_percent }}%">
+                <div style="width: {{ item.progress_percent }}%"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+services:
+  subbark:
+    build: .
+    container_name: subbark
+    restart: unless-stopped
+    ports:
+      # 左侧宿主机端口可自行修改，右侧容器端口固定为 8080。
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
