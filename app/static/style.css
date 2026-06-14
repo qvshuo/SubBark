@@ -240,6 +240,7 @@ h2 span {
 
 @media (max-width: 560px) {
   .page { width: min(100% - 20px, 1120px); padding-top: 24px; }
+  .hero { padding-left: 30px; }
   .summary-layout { align-items: flex-start; flex-direction: column; }
   .summary-emphasis { text-align: left; }
   .groups, .subscription-list { grid-template-columns: 1fr; }
