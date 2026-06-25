@@ -23,6 +23,7 @@ cp subscriptions.example.toml data/subscriptions.toml
 启动服务，默认运行于 `8080` 端口：
 
 ```shell
+cp docker-compose.example.yml docker-compose.yml
 docker compose up -d --build
 ```
 
