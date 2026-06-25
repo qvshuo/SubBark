@@ -20,7 +20,7 @@ cp subscriptions.example.toml data/subscriptions.toml
 
 配置字段说明见 `subscriptions.example.toml` 中的注释。
 
-启动服务：
+启动服务，默认运行于 `8080` 端口：
 
 ```shell
 docker compose up -d --build
