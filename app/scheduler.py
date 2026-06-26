@@ -10,7 +10,7 @@ from app.services.config_loader import load_config
 from app.services.exchange_service import ExchangeService, send_bark_notification
 from app.services.log_store import read_json, trim_notifications, write_json_atomic
 from app.services.renewal_state import cleanup_renewal_state, is_cycle_renewed, load_renewal_state, save_renewal_state
-from app.services.subscription_service import build_dashboard, collect_active_cycle_keys
+from app.services.subscription_service import build_dashboard, collect_active_cycle_keys, find_subscription_item
 
 
 logger = logging.getLogger(__name__)
@@ -33,11 +33,6 @@ class Scheduler:
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self.last_check_at: str | None = None
-        self.renewed_cycles: dict = {}
-        self.refresh_renewal_state()
-
-    def refresh_renewal_state(self) -> None:
-        self.renewed_cycles = load_renewal_state(self.data_dir).get("renewed_cycles", {})
 
     def start(self) -> None:
         if self.thread and self.thread.is_alive():
@@ -68,8 +63,8 @@ class Scheduler:
         exchange = ExchangeService(self.exchange_cache_path, config.app.timezone, config.app.notify_url)
         rates_cache = exchange.sync_once_per_day(today, self.configured_currencies(config))
         self.last_check_at = now_iso(config.app.timezone)
-        self.refresh_renewal_state()
-        dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, self.last_check_at, self.renewed_cycles)
+        renewed_cycles = load_renewal_state(self.data_dir)
+        dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, self.last_check_at, renewed_cycles)
         self._cleanup_expired_renewal_state(dashboard)
         self.send_due_notifications(config, dashboard)
         trim_notifications(self.notification_log_path)
@@ -90,8 +85,8 @@ class Scheduler:
         today = today_in_timezone(config.app.timezone)
         exchange = ExchangeService(self.exchange_cache_path, config.app.timezone, config.app.notify_url)
         rates_cache = exchange.load_rates()
-        self.refresh_renewal_state()
-        dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, self.last_check_at, self.renewed_cycles)
+        renewed_cycles = load_renewal_state(self.data_dir)
+        dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, self.last_check_at, renewed_cycles)
         self._cleanup_expired_renewal_state(dashboard)
         return dashboard
 
@@ -101,7 +96,6 @@ class Scheduler:
         cleaned = cleanup_renewal_state(state, active_keys)
         if cleaned is not state:
             save_renewal_state(self.data_dir, cleaned)
-            self.renewed_cycles = cleaned.get("renewed_cycles", {})
 
     def send_due_notifications(self, config, dashboard: dict) -> None:
         log_data = read_json(self.notification_log_path, {"notifications": []})
@@ -118,7 +112,7 @@ class Scheduler:
                 dedupe_key = f"{item['subscription_id']}:{item['payment_date']}:{item['renewal_date']}"
                 if dedupe_key in sent_keys:
                     continue
-                if is_cycle_renewed(self.renewed_cycles, item["subscription_id"], item["payment_date"], item["renewal_date"]):
+                if is_cycle_renewed(load_renewal_state(self.data_dir), item["subscription_id"], item["payment_date"], item["renewal_date"]):
                     logger.info("Skipping notification for manually renewed subscription: %s", item["name"])
                     continue
                 body = (

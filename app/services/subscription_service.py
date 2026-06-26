@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from dateutil.relativedelta import relativedelta
 
 from app.services.config_loader import Config, SubscriptionConfig
-from app.services.renewal_state import build_button_state, is_cycle_renewed
+from app.services.renewal_state import build_button_state, build_toggle_response, is_cycle_renewed
 
 
 YEARLY_MULTIPLIERS = {
@@ -109,6 +109,18 @@ def collect_active_cycle_keys(dashboard: dict) -> set[str]:
         for item in group["subscription_items"]:
             keys.add(f"{item['subscription_id']}:{item['payment_date']}:{item['renewal_date']}")
     return keys
+
+
+def find_subscription_item(dashboard: dict, subscription_id: str, payment_date: str, renewal_date: str) -> dict | None:
+    for group in dashboard["category_groups"]:
+        for item in group["subscription_items"]:
+            if (
+                item["subscription_id"] == subscription_id
+                and item["payment_date"] == payment_date
+                and item["renewal_date"] == renewal_date
+            ):
+                return item
+    return None
 
 
 def build_subscription_item(subscription: SubscriptionConfig, remind_before_days: int, rates_cache: dict, amount_to_cny, today: date, renewed_cycles: dict | None = None) -> dict:

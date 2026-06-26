@@ -6,7 +6,6 @@ from typing import Any
 from app.services.log_store import read_json, write_json_atomic
 
 
-RENEWAL_STATE_KEY = "renewed_cycles"
 MIN_BUTTON_WINDOW_DAYS = 7
 
 
@@ -15,7 +14,11 @@ def _state_path(data_dir: Path) -> Path:
 
 
 def load_renewal_state(data_dir: Path) -> dict[str, Any]:
-    return read_json(_state_path(data_dir), {RENEWAL_STATE_KEY: {}})
+    data = read_json(_state_path(data_dir), {})
+    # 兼容旧结构 { "renewed_cycles": { ... } }
+    if "renewed_cycles" in data and isinstance(data["renewed_cycles"], dict):
+        return dict(data["renewed_cycles"])
+    return data if isinstance(data, dict) else {}
 
 
 def save_renewal_state(data_dir: Path, state: dict[str, Any]) -> None:
@@ -29,8 +32,7 @@ def _cycle_key(subscription_id: str, payment_date: str, renewal_date: str) -> st
 def is_cycle_renewed(
     state: dict[str, Any], subscription_id: str, payment_date: str, renewal_date: str
 ) -> bool:
-    cycles = state.get(RENEWAL_STATE_KEY) or {}
-    return bool(cycles.get(_cycle_key(subscription_id, payment_date, renewal_date)))
+    return bool(state.get(_cycle_key(subscription_id, payment_date, renewal_date)))
 
 
 def set_cycle_renewed(
@@ -40,13 +42,11 @@ def set_cycle_renewed(
     renewal_date: str,
     renewed: bool,
 ) -> dict[str, Any]:
-    cycles = dict(state.get(RENEWAL_STATE_KEY) or {})
     key = _cycle_key(subscription_id, payment_date, renewal_date)
     if renewed:
-        cycles[key] = True
+        state[key] = True
     else:
-        cycles.pop(key, None)
-    state[RENEWAL_STATE_KEY] = cycles
+        state.pop(key, None)
     return state
 
 
@@ -62,11 +62,12 @@ def build_button_state(days_left: int, cycle_renewed: bool, remind_before_days: 
     return {"kind": "normal", "label": "正常", "clickable": False}
 
 
+def build_toggle_response(days_left: int, renewed: bool, remind_before_days: int) -> dict[str, Any]:
+    return build_button_state(days_left, renewed, remind_before_days) | {"renewed": renewed}
+
+
 def cleanup_renewal_state(state: dict[str, Any], active_keys: set[str]) -> dict[str, Any]:
-    cycles = state.get(RENEWAL_STATE_KEY)
-    if not isinstance(cycles, dict):
-        return {RENEWAL_STATE_KEY: {}}
-    cleaned = {key: value for key, value in cycles.items() if key in active_keys}
-    if len(cleaned) != len(cycles):
-        return {RENEWAL_STATE_KEY: cleaned}
+    cleaned = {key: value for key, value in state.items() if key in active_keys}
+    if len(cleaned) != len(state):
+        return cleaned
     return state

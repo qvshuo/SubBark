@@ -7,14 +7,14 @@ import signal
 from datetime import date, datetime
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, render_template, request
 
 from app.scheduler import Scheduler
 from app.services.config_loader import load_config
 from app.services.exchange_service import DEFAULT_CACHE, ExchangeService
 from app.services.log_store import write_json_atomic
-from app.services.renewal_state import load_renewal_state, save_renewal_state, set_cycle_renewed
-from app.services.subscription_service import build_dashboard, build_button_state, collect_active_cycle_keys
+from app.services.renewal_state import build_toggle_response, load_renewal_state, save_renewal_state, set_cycle_renewed
+from app.services.subscription_service import build_dashboard, find_subscription_item
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -55,34 +55,6 @@ def _today_for_config(config) -> date:
     return datetime.now(ZoneInfo(config.app.timezone)).date()
 
 
-def _find_dashboard_item(config, subscription_id: str, payment_date: str, renewal_date: str) -> dict | None:
-    today = _today_for_config(config)
-    exchange = ExchangeService(scheduler.exchange_cache_path, config.app.timezone, config.app.notify_url)
-    rates_cache = exchange.load_rates()
-    dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, scheduler.last_check_at, scheduler.renewed_cycles)
-    for group in dashboard["category_groups"]:
-        for item in group["subscription_items"]:
-            if (
-                item["subscription_id"] == subscription_id
-                and item["payment_date"] == payment_date
-                and item["renewal_date"] == renewal_date
-            ):
-                return item
-    return None
-
-
-def _button_state_response(item: dict, renewed: bool, remind_before_days: int) -> dict:
-    if renewed:
-        return {"renewed": True, "kind": "renewed", "label": "已续费", "clickable": True}
-    state = build_button_state(item["days_left"], False, remind_before_days)
-    return {
-        "renewed": False,
-        "kind": state["kind"],
-        "label": state["label"],
-        "clickable": state["clickable"],
-    }
-
-
 @app.post("/renewal-status/toggle")
 def toggle_renewal_status():
     subscription_id = request.form.get("subscription_id", "").strip()
@@ -93,22 +65,22 @@ def toggle_renewal_status():
         return jsonify({"error": "missing parameters"}), 400
 
     config = load_config(CONFIG_PATH)
-    item = _find_dashboard_item(config, subscription_id, payment_date, renewal_date)
+    today = _today_for_config(config)
+    exchange = ExchangeService(scheduler.exchange_cache_path, config.app.timezone, config.app.notify_url)
+    rates_cache = exchange.load_rates()
+    renewed_cycles = load_renewal_state(DATA_DIR)
+    dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, scheduler.last_check_at, renewed_cycles)
+    item = find_subscription_item(dashboard, subscription_id, payment_date, renewal_date)
     if item is None or not item["button_state"]["clickable"]:
         return jsonify({"error": "subscription not toggleable"}), 400
 
-    state = load_renewal_state(DATA_DIR)
     current_key = f"{subscription_id}:{payment_date}:{renewal_date}"
-    current = bool((state.get("renewed_cycles") or {}).get(current_key))
+    current = bool(renewed_cycles.get(current_key))
     renewed = not current
-    state = set_cycle_renewed(state, subscription_id, payment_date, renewal_date, renewed)
+    state = set_cycle_renewed(renewed_cycles, subscription_id, payment_date, renewal_date, renewed)
     save_renewal_state(DATA_DIR, state)
-    scheduler.refresh_renewal_state()
 
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify(_button_state_response(item, renewed, config.app.remind_before_days))
-
-    return redirect(url_for("index"))
+    return jsonify(build_toggle_response(item["days_left"], renewed, config.app.remind_before_days))
 
 
 @app.get("/health")
