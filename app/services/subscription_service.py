@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from dateutil.relativedelta import relativedelta
 
 from app.services.config_loader import Config, SubscriptionConfig
+from app.services.renewal_state import build_button_state, is_cycle_renewed
 
 
 YEARLY_MULTIPLIERS = {
@@ -70,14 +71,15 @@ def build_subscription_id(subscription: SubscriptionConfig) -> str:
     return hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
 
 
-def build_dashboard(config: Config, rates_cache: dict, amount_to_cny, today: date, last_check_at: str | None = None) -> dict:
+def build_dashboard(config: Config, rates_cache: dict, amount_to_cny, today: date, last_check_at: str | None = None, renewed_cycles: dict | None = None) -> dict:
     items = []
     expiring_count = 0
     monthly_due_cny = 0.0
     yearly_estimated_cny = 0.0
+    renewed_cycles = renewed_cycles or {}
 
     for subscription in config.subscriptions:
-        item = build_subscription_item(subscription, config.app.remind_before_days, rates_cache, amount_to_cny, today)
+        item = build_subscription_item(subscription, config.app.remind_before_days, rates_cache, amount_to_cny, today, renewed_cycles)
         items.append(item)
         if item["status"] == "expiring":
             expiring_count += 1
@@ -101,7 +103,16 @@ def build_dashboard(config: Config, rates_cache: dict, amount_to_cny, today: dat
     return {"summary": summary, "category_groups": category_groups}
 
 
-def build_subscription_item(subscription: SubscriptionConfig, remind_before_days: int, rates_cache: dict, amount_to_cny, today: date) -> dict:
+def collect_active_cycle_keys(dashboard: dict) -> set[str]:
+    keys = set()
+    for group in dashboard["category_groups"]:
+        for item in group["subscription_items"]:
+            keys.add(f"{item['subscription_id']}:{item['payment_date']}:{item['renewal_date']}")
+    return keys
+    return {"summary": summary, "category_groups": category_groups}
+
+
+def build_subscription_item(subscription: SubscriptionConfig, remind_before_days: int, rates_cache: dict, amount_to_cny, today: date, renewed_cycles: dict | None = None) -> dict:
     payment_date = date.fromisoformat(subscription.payment_date)
     renewal_date = next_renewal_date(payment_date, subscription.billing_cycle, today)
     period_start = current_period_start(payment_date, subscription.billing_cycle, renewal_date)
@@ -111,10 +122,13 @@ def build_subscription_item(subscription: SubscriptionConfig, remind_before_days
     days_left = (renewal_date - today).days
     reminder_start = renewal_date - timedelta(days=remind_before_days)
 
+    subscription_id = build_subscription_id(subscription)
+    cycle_renewed = is_cycle_renewed(renewed_cycles or {}, subscription_id, payment_date.isoformat(), renewal_date.isoformat())
+
     amount_cny = amount_to_cny(subscription.amount, subscription.currency, rates_cache)
     yearly_estimated_cny = None if amount_cny is None else round(amount_cny * YEARLY_MULTIPLIERS[subscription.billing_cycle], 2)
     return {
-        "subscription_id": build_subscription_id(subscription),
+        "subscription_id": subscription_id,
         "name": subscription.name,
         "category": subscription.category,
         "billing_cycle": subscription.billing_cycle,
@@ -128,6 +142,8 @@ def build_subscription_item(subscription: SubscriptionConfig, remind_before_days
         "currency": subscription.currency,
         "amount_cny": amount_cny,
         "yearly_estimated_cny": yearly_estimated_cny,
+        "notify_enabled": subscription.notify_enabled,
+        "button_state": build_button_state(days_left, cycle_renewed, remind_before_days),
     }
 
 

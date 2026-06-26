@@ -21,6 +21,8 @@ payment_date = "2026-06-10"
 amount = 9.99
 # 费用币种。
 currency = "USD"
+# 是否发送 Bark 续费提醒；缺省为 true。
+notify_enabled = true
 
 [[subscriptions]]
 name = "iCloud+"
@@ -29,6 +31,7 @@ billing_cycle = "month"
 payment_date = "2026-06-15"
 amount = 21
 currency = "CNY"
+notify_enabled = true
 
 [[subscriptions]]
 name = "Cursor"
@@ -37,6 +40,7 @@ billing_cycle = "year"
 payment_date = "2026-03-08"
 amount = 192
 currency = "USD"
+notify_enabled = true
 
 [[subscriptions]]
 name = "GitHub Copilot"
@@ -45,3 +49,4 @@ billing_cycle = "month"
 payment_date = "2026-06-01"
 amount = 10
 currency = "USD"
+notify_enabled = false

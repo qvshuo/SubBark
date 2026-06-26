@@ -27,6 +27,7 @@ class SubscriptionConfig:
     payment_date: str
     amount: float
     currency: str
+    notify_enabled: bool
 
 
 @dataclass(frozen=True)
@@ -83,8 +84,12 @@ def _load_subscription(item: object, index: int) -> SubscriptionConfig:
         raise ValueError(f"Subscription #{index} has invalid payment_date: {payment_date}") from exc
 
     amount = item.get("amount")
-    if not isinstance(amount, int | float) or amount < 0:
+    if isinstance(amount, bool) or not isinstance(amount, int | float) or amount < 0:
         raise ValueError(f"Subscription #{index} requires non-negative amount")
+
+    notify_enabled = item.get("notify_enabled", True)
+    if not isinstance(notify_enabled, bool):
+        raise ValueError(f"Subscription #{index} notify_enabled must be a boolean")
 
     return SubscriptionConfig(
         name=_required_str(item, "name"),
@@ -93,6 +98,7 @@ def _load_subscription(item: object, index: int) -> SubscriptionConfig:
         payment_date=payment_date,
         amount=float(amount),
         currency=_required_str(item, "currency").upper(),
+        notify_enabled=notify_enabled,
     )
 
 

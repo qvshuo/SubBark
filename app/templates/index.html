@@ -55,7 +55,17 @@
                     {% endif %}
                   </p>
                 </div>
-                <span class="status-pill">{{ item.status|status_label }}</span>
+                {% if item.button_state.clickable %}
+                <form action="{{ url_for('toggle_renewal_status') }}" method="post" class="renewal-form">
+                  <input type="hidden" name="subscription_id" value="{{ item.subscription_id }}">
+                  <input type="hidden" name="payment_date" value="{{ item.payment_date }}">
+                  <input type="hidden" name="renewal_date" value="{{ item.renewal_date }}">
+                  <input type="hidden" name="next" value="{{ request.url }}">
+                  <button type="submit" class="status-pill status-pill-button status-{{ item.button_state.kind }}">{{ item.button_state.label }}</button>
+                </form>
+                {% else %}
+                <span class="status-pill status-{{ item.button_state.kind }}">{{ item.button_state.label }}</span>
+                {% endif %}
               </div>
               <div class="dates">
                 <span>续费日 {{ item.renewal_date }}</span>
