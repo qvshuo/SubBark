@@ -109,7 +109,6 @@ def collect_active_cycle_keys(dashboard: dict) -> set[str]:
         for item in group["subscription_items"]:
             keys.add(f"{item['subscription_id']}:{item['payment_date']}:{item['renewal_date']}")
     return keys
-    return {"summary": summary, "category_groups": category_groups}
 
 
 def build_subscription_item(subscription: SubscriptionConfig, remind_before_days: int, rates_cache: dict, amount_to_cny, today: date, renewed_cycles: dict | None = None) -> dict:

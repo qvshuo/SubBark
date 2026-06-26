@@ -56,11 +56,10 @@
                   </p>
                 </div>
                 {% if item.button_state.clickable %}
-                <form action="{{ url_for('toggle_renewal_status') }}" method="post" class="renewal-form">
+                <form action="{{ url_for('toggle_renewal_status') }}" method="post" class="renewal-form" data-renewal-form>
                   <input type="hidden" name="subscription_id" value="{{ item.subscription_id }}">
                   <input type="hidden" name="payment_date" value="{{ item.payment_date }}">
                   <input type="hidden" name="renewal_date" value="{{ item.renewal_date }}">
-                  <input type="hidden" name="next" value="{{ request.url }}">
                   <button type="submit" class="status-pill status-pill-button status-{{ item.button_state.kind }}">{{ item.button_state.label }}</button>
                 </form>
                 {% else %}
@@ -81,5 +80,34 @@
         {% endfor %}
       </section>
     </main>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-renewal-form]").forEach(function (form) {
+          form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var button = form.querySelector("button");
+            if (!button || button.disabled) return;
+            button.disabled = true;
+            fetch(form.action, {
+              method: "POST",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+              body: new FormData(form),
+            })
+              .then(function (response) {
+                if (!response.ok) throw new Error("toggle failed");
+                return response.json();
+              })
+              .then(function (data) {
+                button.textContent = data.label;
+                button.className = "status-pill status-pill-button status-" + data.kind;
+                button.disabled = false;
+              })
+              .catch(function () {
+                button.disabled = false;
+              });
+          });
+        });
+      });
+    </script>
   </body>
 </html>
