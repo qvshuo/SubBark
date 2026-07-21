@@ -4,7 +4,7 @@
 
 # SubBark
 
-订阅提醒工具，在续费前通过 Bark 向 iPhone 发送通知。
+订阅提醒工具，在到期前通过 Bark 自动向 iPhone 推送通知。
 
 ## 截图
 
