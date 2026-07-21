@@ -62,7 +62,7 @@ def build_button_state(days_left: int, cycle_renewed: bool, remind_before_days: 
         status_kind, status_label = "renewed", "已续费"
         action_label, action_intent = "取消已续费", "unmark"
     elif days_left <= button_window_days(remind_before_days):
-        status_kind, status_label = "renewal_pending", f"{days_left}天后续费"
+        status_kind, status_label = "renewal_pending", "即将续费"
         action_label, action_intent = "标记已续费", "mark"
     else:
         status_kind, status_label = "normal", "正常"

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="app/static/bell.png" alt="SubBark logo" width="120">
+</p>
+
 # SubBark
 
 订阅提醒工具，在续费前通过 Bark 发送通知。
