@@ -64,8 +64,6 @@ def build_subscription_id(subscription: SubscriptionConfig) -> str:
             subscription.name,
             subscription.payment_date,
             subscription.billing_cycle,
-            f"{subscription.amount:.8f}",
-            subscription.currency,
         ]
     )
     return hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]

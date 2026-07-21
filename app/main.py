@@ -71,7 +71,7 @@ def toggle_renewal_status():
     renewed_cycles = load_renewal_state(DATA_DIR)
     dashboard = build_dashboard(config, rates_cache, exchange.amount_to_cny, today, scheduler.last_check_at, renewed_cycles)
     item = find_subscription_item(dashboard, subscription_id, payment_date, renewal_date)
-    if item is None or not item["button_state"]["clickable"]:
+    if item is None or not item["button_state"]["can_toggle"]:
         return jsonify({"error": "subscription not toggleable"}), 400
 
     current_key = f"{subscription_id}:{payment_date}:{renewal_date}"

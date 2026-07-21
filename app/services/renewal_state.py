@@ -55,11 +55,26 @@ def button_window_days(remind_before_days: int) -> int:
 
 
 def build_button_state(days_left: int, cycle_renewed: bool, remind_before_days: int) -> dict[str, Any]:
+    """返回 status（徽标展示）和 action（三点菜单项）两份数据，由前端决定怎么渲染。"""
+    can_toggle = cycle_renewed or days_left <= button_window_days(remind_before_days)
+
     if cycle_renewed:
-        return {"kind": "renewed", "label": "已续费", "clickable": True}
-    if days_left <= button_window_days(remind_before_days):
-        return {"kind": "renewal_pending", "label": f"{days_left}天后续费", "clickable": True}
-    return {"kind": "normal", "label": "正常", "clickable": False}
+        status_kind, status_label = "renewed", "已续费"
+        action_label, action_intent = "取消已续费", "unmark"
+    elif days_left <= button_window_days(remind_before_days):
+        status_kind, status_label = "renewal_pending", f"{days_left}天后续费"
+        action_label, action_intent = "标记已续费", "mark"
+    else:
+        status_kind, status_label = "normal", "正常"
+        action_label, action_intent = "标记已续费", "mark"
+
+    return {
+        "status_kind": status_kind,
+        "status_label": status_label,
+        "action_label": action_label,
+        "action_intent": action_intent,
+        "can_toggle": can_toggle,
+    }
 
 
 def build_toggle_response(days_left: int, renewed: bool, remind_before_days: int) -> dict[str, Any]:
