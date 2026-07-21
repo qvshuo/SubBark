@@ -1,3 +1,5 @@
+"""Currency conversion and Bark notification helpers."""
+
 from __future__ import annotations
 
 import logging
@@ -12,6 +14,8 @@ from app.services.log_store import read_json, write_json_atomic
 
 
 logger = logging.getLogger(__name__)
+
+# Initial cache used until the first successful exchange-rate sync.
 DEFAULT_CACHE = {
     "base": "CNY",
     "date": None,

@@ -1,3 +1,5 @@
+"""Manual renewal marking and UI button state."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,7 +17,7 @@ def _state_path(data_dir: Path) -> Path:
 
 def load_renewal_state(data_dir: Path) -> dict[str, Any]:
     data = read_json(_state_path(data_dir), {})
-    # 兼容旧结构 { "renewed_cycles": { ... } }
+    # Support the legacy { "renewed_cycles": { ... } } layout.
     if "renewed_cycles" in data and isinstance(data["renewed_cycles"], dict):
         return dict(data["renewed_cycles"])
     return data if isinstance(data, dict) else {}
@@ -55,7 +57,7 @@ def button_window_days(remind_before_days: int) -> int:
 
 
 def build_button_state(days_left: int, cycle_renewed: bool, remind_before_days: int) -> dict[str, Any]:
-    """返回 status（徽标展示）和 action（三点菜单项）两份数据，由前端决定怎么渲染。"""
+    """Return the status chip and menu action data rendered by the frontend."""
     if cycle_renewed:
         status_kind, status_label = "renewed", "已续费"
         action_label, action_intent = "取消已续费", "unmark"

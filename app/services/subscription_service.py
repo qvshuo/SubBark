@@ -1,3 +1,5 @@
+"""Dashboard builder: computes renewal dates, status and totals."""
+
 from __future__ import annotations
 
 import hashlib
@@ -10,6 +12,7 @@ from app.services.config_loader import Config, SubscriptionConfig
 from app.services.renewal_state import build_button_state, build_toggle_response, is_cycle_renewed
 
 
+# Approximate billing cycles per year for yearly-cost estimation.
 YEARLY_MULTIPLIERS = {
     "week": 52,
     "month": 12,
@@ -17,6 +20,7 @@ YEARLY_MULTIPLIERS = {
     "year": 1,
 }
 
+# relativedelta keyword for each supported billing cycle.
 CYCLE_RELATIVEDELTA_ARGS = {
     "week": "weeks",
     "month": "months",

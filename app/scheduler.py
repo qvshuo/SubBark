@@ -1,3 +1,5 @@
+"""Background thread that checks subscriptions and sends reminders."""
+
 from __future__ import annotations
 
 import logging

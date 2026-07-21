@@ -1,3 +1,5 @@
+"""Flask web app and HTTP endpoints."""
+
 from __future__ import annotations
 
 import atexit
