@@ -40,5 +40,5 @@ docker compose up -d --build
 修改 `data/subscriptions.toml` 后，重启服务：
 
 ```shell
-docker compose restart subbark
+docker compose restart
 ```
