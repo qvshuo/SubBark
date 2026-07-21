@@ -66,20 +66,16 @@
                         <input type="hidden" name="subscription_id" value="{{ item.subscription_id }}">
                         <input type="hidden" name="payment_date" value="{{ item.payment_date }}">
                         <input type="hidden" name="renewal_date" value="{{ item.renewal_date }}">
-                        <button type="submit" class="menu-item" role="menuitem"
-                                {% if not item.button_state.can_toggle %}disabled aria-disabled="true"{% endif %}>
+                        <button type="submit" class="menu-item" role="menuitem">
                           <span class="menu-item-icon menu-icon-mark"{% if item.button_state.status_kind == 'renewed' %} hidden{% endif %}>
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
                           </span>
                           <span class="menu-item-icon menu-icon-unmark"{% if item.button_state.status_kind != 'renewed' %} hidden{% endif %}>
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </span>
-                          <span class="menu-item-text">{% if item.button_state.status_kind == 'renewed' %}取消已续费{% else %}标记已续费{% endif %}</span>
+                          <span class="menu-item-text">{{ item.button_state.action_label }}</span>
                         </button>
                       </form>
-                      {% if not item.button_state.can_toggle %}
-                      <p class="menu-hint">临近续费日或已标记续费后可操作</p>
-                      {% endif %}
                     </div>
                   </div>
                 </div>
@@ -166,7 +162,7 @@
                 var textNode = button.querySelector(".menu-item-text");
                 if (markIcon) markIcon.hidden = !!data.renewed;
                 if (unmarkIcon) unmarkIcon.hidden = !data.renewed;
-                if (textNode) textNode.textContent = data.renewed ? "取消已续费" : "标记已续费";
+                if (textNode) textNode.textContent = data.action_label;
                 // 倒计时主视觉同步换色
                 var countdown = card.querySelector(".item-countdown");
                 if (countdown) {
